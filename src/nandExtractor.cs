@@ -163,16 +163,17 @@ namespace NAND_Extractor
 
         private bool getKey(int type)
         {
+            var keyPath = Path.Combine(Path.GetDirectoryName(nandFilename), "keys.bin");
             switch (type)
             {
                 case 0:
-                    key = readKeyfile(Directory.GetCurrentDirectory() + "\\keys.bin");
+                    key = readKeyfile(keyPath);
                     if (key != null)
                         return true;
                     break;
-                
+
                 case 1:
-                    key = readKeyfile(Directory.GetCurrentDirectory() + "\\keys.bin");
+                    key = readKeyfile(keyPath);
                     if (key != null)
                         return true;
                     break;
