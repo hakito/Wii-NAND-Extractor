@@ -38,5 +38,29 @@ namespace NAND_Extractor.Properties {
                 this["nand_key"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NandPath {
+            get {
+                return ((string)(this["NandPath"]));
+            }
+            set {
+                this["NandPath"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ExtractPath {
+            get {
+                return ((string)(this["ExtractPath"]));
+            }
+            set {
+                this["ExtractPath"] = value;
+            }
+        }
     }
 }

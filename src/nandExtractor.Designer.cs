@@ -17,7 +17,7 @@
 
 namespace NAND_Extractor
 {
-    partial class nandExtractor
+    partial class NandExtractor
     {
         /// <summary>
         /// Required designer variable.
@@ -46,7 +46,7 @@ namespace NAND_Extractor
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(nandExtractor));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(NandExtractor));
             this.menuMain = new System.Windows.Forms.MenuStrip();
             this.fileMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileMenu = new System.Windows.Forms.ToolStripMenuItem();

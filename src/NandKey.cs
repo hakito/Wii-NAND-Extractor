@@ -52,7 +52,7 @@ namespace NAND_Extractor
                 this.Close();
             }
             else
-                nandExtractor.msg_Error("Your NAND Key is the wrong length.  It should be 32 characters long.  Please check your key and try again.");
+                NandExtractor.msg_Error("Your NAND Key is the wrong length.  It should be 32 characters long.  Please check your key and try again.");
         }
 
         private void buttonCancel_Click(object sender, EventArgs e)

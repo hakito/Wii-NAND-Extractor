@@ -19,16 +19,15 @@ using Microsoft.WindowsAPICodePack.Dialogs;
 using System;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
 namespace NAND_Extractor
 {
-    public partial class nandExtractor : Form
+    public partial class NandExtractor : Form
     {
-        public nandExtractor()
+        public NandExtractor()
         {
             InitializeComponent();
         }
@@ -60,58 +59,58 @@ namespace NAND_Extractor
         public static Int32 loc_super;
         public static Int32 loc_fat;
         public static Int32 loc_fst;
-        public static string nandFilename;
-        public static string extractPath;
         public static int type = -1;
 
 
         /*
          * Core functions.
          */
-        private void fileOpen()
+        private void FileOpen()
         {
             FileDialog fd = new OpenFileDialog();
             fd.Filter = "Wii NAND dump (*.bin,*.img)|*.bin;*.img|All files (*.*)|*.*";
             fd.Title = "Open Wii NAND dump file";
+            if (!string.IsNullOrEmpty(Properties.Settings.Default.NandPath))
+                fd.FileName = Properties.Settings.Default.NandPath;
 
-            if (fd.ShowDialog(this) != DialogResult.Cancel)
-            {
-                string filename = fd.FileName.Remove(0, fd.FileName.LastIndexOf("\\") + 1);
-                string details_desc = "   mode|attr   uid:gid   filesize (in bytes)";
-
-                statusText(string.Format("Loading {0} for viewing...", filename));
-
-                int i = filename.LastIndexOf(".");
-                if (i > 0)
-                    filename = filename.Remove(i, filename.Length - i);
-
-                info.Items["size"].Text = "0";
-                info.Items["files"].Text = "0";
-                fileView.Nodes.Clear();
-                fileView.Nodes.Add("0000", filename + details_desc, 2, 2);
-                
-                nandFilename = fd.FileName;
-
-                if (initNand())
-                {
-                    viewFST(0, 0);
-
-                    fileView.Sort();
-                    fileView.Nodes["0000"].Expand();
-
-                    rom.Close();                    
-                }
-                else
-                    msg_Error("Invalid or unsupported dump.");
-
-                statusText(string.Empty);
-            }
+            if (fd.ShowDialog(this) == DialogResult.Cancel)
+                return;
             
+            string filename = Path.GetFileName(fd.FileName);
+            string details_desc = "   mode|attr   uid:gid   filesize (in bytes)";
+
+            statusText(string.Format("Loading {0} for viewing...", filename));
+
+            filename = Path.ChangeExtension(filename, null);
+
+            info.Items["size"].Text = "0";
+            info.Items["files"].Text = "0";
+            fileView.Nodes.Clear();
+            fileView.Nodes.Add("0000", filename + details_desc, 2, 2);
+
+            Properties.Settings.Default.NandPath = fd.FileName;
+#if DEBUG
+            Properties.Settings.Default.Save();
+#endif
+
+            if (initNand())
+            {
+                viewFST(0, 0);
+
+                fileView.Sort();
+                fileView.Nodes["0000"].Expand();
+
+                rom.Close();                    
+            }
+            else
+                msg_Error("Invalid or unsupported dump.");
+
+            statusText(string.Empty);       
         }
 
         private bool initNand()
         {
-            rom = new BinaryReader(File.Open(nandFilename, 
+            rom = new BinaryReader(File.Open(Properties.Settings.Default.NandPath, 
                                         FileMode.Open, 
                                         FileAccess.Read,
                                         FileShare.Read), 
@@ -160,7 +159,7 @@ namespace NAND_Extractor
 
         private bool getKey(int type)
         {
-            var keyPath = Path.Combine(Path.GetDirectoryName(nandFilename), "keys.bin");
+            var keyPath = Path.Combine(Path.GetDirectoryName(Properties.Settings.Default.NandPath), "keys.bin");
             switch (type)
             {
                 case 0:
@@ -369,7 +368,7 @@ namespace NAND_Extractor
 
             statusText("Extracting NAND...");
 
-            rom = new BinaryReader(File.Open(nandFilename,
+            rom = new BinaryReader(File.Open(Properties.Settings.Default.NandPath,
                                                     FileMode.Open,
                                                     FileAccess.Read,
                                                     FileShare.Read),
@@ -384,18 +383,21 @@ namespace NAND_Extractor
 
         private static bool SetUpExtractPath()
         {
-            if (extractPath == null)
+            if (string.IsNullOrEmpty(Properties.Settings.Default.ExtractPath))
             {
                 var dialog = new CommonOpenFileDialog();
                 dialog.IsFolderPicker = true;
                 if (dialog.ShowDialog() != CommonFileDialogResult.Ok)
                     return false;
 
-                extractPath = dialog.FileName;
+                Properties.Settings.Default.ExtractPath = dialog.FileName;
+#if DEBUG
+                Properties.Settings.Default.Save();
+#endif
             }
 
-            if (!Directory.Exists(extractPath))
-                Directory.CreateDirectory(extractPath);
+            if (!Directory.Exists(Properties.Settings.Default.ExtractPath))
+                Directory.CreateDirectory(Properties.Settings.Default.ExtractPath);
 
             return true;
         }
@@ -457,7 +459,7 @@ namespace NAND_Extractor
                 if (parent != "/" && parent != "")
                     filename = Path.Combine(parent, filename);
              
-                Directory.CreateDirectory(Path.Combine(extractPath, filename));
+                Directory.CreateDirectory(Path.Combine(Properties.Settings.Default.ExtractPath, filename));
             }
 
             if (fst.sub != 0xffff)
@@ -476,7 +478,7 @@ namespace NAND_Extractor
                             Replace("\0", string.Empty).
                             Replace(":", "-");
 
-            var filePath = Path.Combine(extractPath, filename);
+            var filePath = Path.Combine(Properties.Settings.Default.ExtractPath, filename);
             try
             {
                 BinaryWriter bw = new BinaryWriter(File.Open(filePath,
@@ -654,7 +656,7 @@ namespace NAND_Extractor
 
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            fileOpen();
+            FileOpen();
         }
 
         private void extractToolStripMenuItem_Click(object sender, EventArgs e)
@@ -692,7 +694,7 @@ namespace NAND_Extractor
             {
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-                rom = new BinaryReader(File.Open(nandFilename,
+                rom = new BinaryReader(File.Open(Properties.Settings.Default.NandPath,
                                                     FileMode.Open,
                                                     FileAccess.Read,
                                                     FileShare.Read),
