@@ -1,4 +1,3 @@
-﻿*.suo
+﻿.vs/
 /src/obj/*
 /src/bin/*
-/src/packages/*
