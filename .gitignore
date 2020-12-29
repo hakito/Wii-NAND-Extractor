@@ -1,4 +1,4 @@
 ﻿*.suo
 /src/obj/*
 /src/bin/*
-
+/src/packages/*

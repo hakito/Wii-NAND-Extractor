@@ -15,6 +15,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using Microsoft.WindowsAPICodePack.Dialogs;
 using System;
 using System.IO;
 using System.Linq;
@@ -83,10 +84,6 @@ namespace NAND_Extractor
                 int i = filename.LastIndexOf(".");
                 if (i > 0)
                     filename = filename.Remove(i, filename.Length - i);
-
-                extractPath = Directory.GetCurrentDirectory() + "\\" + filename;
-                if (File.Exists(extractPath))
-                    extractPath += "-extract";
 
                 info.Items["size"].Text = "0";
                 info.Items["files"].Text = "0";
@@ -367,6 +364,9 @@ namespace NAND_Extractor
          */
         private void extractNAND()
         {
+            if (!SetUpExtractPath())
+                return;
+
             statusText("Extracting NAND...");
 
             rom = new BinaryReader(File.Open(nandFilename,
@@ -374,14 +374,30 @@ namespace NAND_Extractor
                                                     FileAccess.Read,
                                                     FileShare.Read),
                                                 Encoding.ASCII);
-            if (!Directory.Exists(extractPath))
-                Directory.CreateDirectory(extractPath);
 
             extractFST(0, "");
 
             statusText(string.Empty);
-            
+
             rom.Close();
+        }
+
+        private static bool SetUpExtractPath()
+        {
+            if (extractPath == null)
+            {
+                var dialog = new CommonOpenFileDialog();
+                dialog.IsFolderPicker = true;
+                if (dialog.ShowDialog() != CommonFileDialogResult.Ok)
+                    return false;
+
+                extractPath = dialog.FileName;
+            }
+
+            if (!Directory.Exists(extractPath))
+                Directory.CreateDirectory(extractPath);
+
+            return true;
         }
 
         private void extractFST(UInt16 entry, string parent)
@@ -409,8 +425,8 @@ namespace NAND_Extractor
 
         private void extractSingleFST(UInt16 entry, string parent)
         {
-            if (!Directory.Exists(extractPath))
-                Directory.CreateDirectory(extractPath);
+            if (!SetUpExtractPath())
+                return;
 
             fst_t fst = getFST(entry);
 
@@ -439,9 +455,9 @@ namespace NAND_Extractor
             if (filename != "/")
             {
                 if (parent != "/" && parent != "")
-                    filename = parent + "\\" + filename;
+                    filename = Path.Combine(parent, filename);
              
-                Directory.CreateDirectory(extractPath + "\\" + filename);
+                Directory.CreateDirectory(Path.Combine(extractPath, filename));
             }
 
             if (fst.sub != 0xffff)
@@ -455,14 +471,15 @@ namespace NAND_Extractor
             byte[] cluster = new byte[0x4000],
                    data = new byte[cluster_span * 0x4000];
 
-            string filename = "\\" + parent + "\\" +
+            string filename = parent + "\\" +
                             ASCIIEncoding.ASCII.GetString(fst.filename).
                             Replace("\0", string.Empty).
                             Replace(":", "-");
 
+            var filePath = Path.Combine(extractPath, filename);
             try
             {
-                BinaryWriter bw = new BinaryWriter(File.Open(extractPath + filename,
+                BinaryWriter bw = new BinaryWriter(File.Open(filePath,
                                                                 FileMode.Create,
                                                                 FileAccess.Write,
                                                                 FileShare.Read),
@@ -480,8 +497,7 @@ namespace NAND_Extractor
             }
             catch
             {
-                msg_Error(string.Format("Can't open file for writing:\n{0}",
-                                            extractPath + filename) );
+                msg_Error($"Can't open file for writing:\n{filePath}" );
             }
         }
 
