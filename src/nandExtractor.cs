@@ -30,6 +30,13 @@ namespace NAND_Extractor
         public NandExtractor()
         {
             InitializeComponent();
+            this.Load += NandExtractor_Load;
+        }
+
+        private void NandExtractor_Load(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(Properties.Settings.Default.NandPath))
+                ViewFile();
         }
 
 
@@ -75,8 +82,18 @@ namespace NAND_Extractor
 
             if (fd.ShowDialog(this) == DialogResult.Cancel)
                 return;
-            
-            string filename = Path.GetFileName(fd.FileName);
+
+            Properties.Settings.Default.NandPath = fd.FileName;
+#if DEBUG
+            Properties.Settings.Default.Save();
+#endif
+
+            ViewFile();
+        }
+
+        private void ViewFile()
+        {
+            string filename = Path.GetFileName(Properties.Settings.Default.NandPath);
             string details_desc = "   mode|attr   uid:gid   filesize (in bytes)";
 
             statusText(string.Format("Loading {0} for viewing...", filename));
@@ -88,11 +105,6 @@ namespace NAND_Extractor
             fileView.Nodes.Clear();
             fileView.Nodes.Add("0000", filename + details_desc, 2, 2);
 
-            Properties.Settings.Default.NandPath = fd.FileName;
-#if DEBUG
-            Properties.Settings.Default.Save();
-#endif
-
             if (initNand())
             {
                 viewFST(0, 0);
@@ -100,12 +112,12 @@ namespace NAND_Extractor
                 fileView.Sort();
                 fileView.Nodes["0000"].Expand();
 
-                rom.Close();                    
+                rom.Close();
             }
             else
                 msg_Error("Invalid or unsupported dump.");
 
-            statusText(string.Empty);       
+            statusText(string.Empty);
         }
 
         private bool initNand()
