@@ -1,6 +1,6 @@
 # Wii NAND Extractor
 
-This project is a fork of Wii [NAND Extractor by Ben Williams](https://sites.google.com/site/parannoyedwii/projects/wii-nand-extractor).
+This project is a fork of Wii [NAND Extractor by Ben Williams](https://sites.google.com/site/parannoyedwii/projects/wii-nand-extractor) at version 0.1.3.
 
 ## Features
 
