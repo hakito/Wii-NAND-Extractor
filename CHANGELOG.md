@@ -2,7 +2,7 @@
 
 ## 20201228: 1.1 - Fork with usability improvements
 
-* Export folder can be choosen upon export
+* Export folder can be chosen upon export
 * NAND filepath and export folder can be stored in settings.
   The NAND file from the app settings is automatically loaded.
 * DEBUG builds automatically persist the last NAND file and export folder
