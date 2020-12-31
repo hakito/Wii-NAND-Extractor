@@ -17,8 +17,10 @@ This project is a fork of Wii [NAND Extractor by Ben Williams](https://sites.goo
 * Use the _Extract All_ menu option, or right click on a file/directory and
   select _Extract_.
 
-Copyright 2009 Ben Wilson / [parannoyed](http://sites.google.com/site/parannoyedwii/)
-Copyright 2020 Gerd Katzenbeisser
+## Copyright
+
+* Copyright 2009 Ben Wilson / [parannoyed](http://sites.google.com/site/parannoyedwii/)
+* Copyright 2020 Gerd Katzenbeisser
 
 ## Thanks to
 
