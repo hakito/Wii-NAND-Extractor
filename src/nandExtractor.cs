@@ -44,7 +44,7 @@ namespace NAND_Extractor
         /*
          * Class for fst entries.
          */
-        public class fst_t
+        public class Fst_t
         {
             public byte[] filename = new byte[0x0B];
             public byte mode;
@@ -75,9 +75,11 @@ namespace NAND_Extractor
          */
         private void FileOpen()
         {
-            FileDialog fd = new OpenFileDialog();
-            fd.Filter = "Wii NAND dump (*.bin,*.img)|*.bin;*.img|All files (*.*)|*.*";
-            fd.Title = "Open Wii NAND dump file";
+            FileDialog fd = new OpenFileDialog
+            {
+                Filter = "Wii NAND dump (*.bin,*.img)|*.bin;*.img|All files (*.*)|*.*",
+                Title = "Open Wii NAND dump file"
+            };
             if (!string.IsNullOrEmpty(Properties.Settings.Default.NandPath))
                 fd.FileName = Properties.Settings.Default.NandPath;
 
@@ -97,7 +99,7 @@ namespace NAND_Extractor
             string filename = Path.GetFileName(Properties.Settings.Default.NandPath);
             string details_desc = "   mode|attr   uid:gid   filesize (in bytes)";
 
-            statusText(string.Format("Loading {0} for viewing...", filename));
+            StatusText(string.Format("Loading {0} for viewing...", filename));
 
             filename = Path.ChangeExtension(filename, null);
 
@@ -106,9 +108,9 @@ namespace NAND_Extractor
             fileView.Nodes.Clear();
             fileView.Nodes.Add("0000", filename + details_desc, 2, 2);
 
-            if (initNand())
+            if (InitNand())
             {
-                viewFST(0, 0);
+                ViewFST(0, 0);
 
                 fileView.Sort();
                 fileView.Nodes["0000"].Expand();
@@ -116,12 +118,12 @@ namespace NAND_Extractor
                 rom.Close();
             }
             else
-                msg_Error("Invalid or unsupported dump.");
+                Msg_Error("Invalid or unsupported dump.");
 
-            statusText(string.Empty);
+            StatusText(string.Empty);
         }
 
-        private bool initNand()
+        private bool InitNand()
         {
             rom = new BinaryReader(File.Open(Properties.Settings.Default.NandPath, 
                                         FileMode.Open, 
@@ -130,25 +132,21 @@ namespace NAND_Extractor
                                     Encoding.ASCII);
 
                 
-            type = getDumpType(rom.BaseStream.Length);
+            type = GetDumpType(rom.BaseStream.Length);
             
-            if ( getKey(type) )
+            if ( GetKey(type) )
             {
-                //Console.WriteLine(BitConverter.ToString(key).Replace("-", string.Empty));
-
                 try
                 {
-                    loc_super = findSuperblock();
+                    loc_super = FindSuperblock();
                 }
                 catch
                 {
-                    statusText("Invalid or non-ECC NAND dump");
+                    StatusText("Invalid or non-ECC NAND dump");
                     fileView.Nodes.Clear();
-                    msg_Error("Can't find superblock.\nAre you sure this is a Full (with ECC) or BootMii NAND dump?");
+                    Msg_Error("Can't find superblock.\nAre you sure this is a Full (with ECC) or BootMii NAND dump?");
                     return false;
                 }
-
-                //Console.WriteLine("Superblock @ {0}", loc_super);
 
                 Int32[] n_fatlen = { 0x010000, 0x010800, 0x010800 };
                 loc_fat = loc_super;
@@ -159,7 +157,7 @@ namespace NAND_Extractor
             return false;
         }
 
-        private int getDumpType(Int64 FileSize)
+        private int GetDumpType(Int64 FileSize)
         {
             Int64[] sizes = { 536870912,    // type 0 | 536870912 == no ecc
                               553648128,    // type 1 | 553648128 == ecc
@@ -170,19 +168,19 @@ namespace NAND_Extractor
             return -1;
         }
 
-        private bool getKey(int type)
+        private bool GetKey(int type)
         {
             var keyPath = Path.Combine(Path.GetDirectoryName(Properties.Settings.Default.NandPath), "keys.bin");
             switch (type)
             {
                 case 0:
-                    key = readKeyfile(keyPath);
+                    key = ReadKeyfile(keyPath);
                     if (key != null)
                         return true;
                     break;
 
                 case 1:
-                    key = readKeyfile(keyPath);
+                    key = ReadKeyfile(keyPath);
                     if (key != null)
                         return true;
                     break;
@@ -196,17 +194,17 @@ namespace NAND_Extractor
 
             if (Properties.Settings.Default.nand_key.Length == 32)
             {
-                key = strToByte(Properties.Settings.Default.nand_key);
-                msg_Info(string.Format("No new key data found, using manually entered key\n{0}\n\n" + 
+                key = StrToByte(Properties.Settings.Default.nand_key);
+                Msg_Info(string.Format("No new key data found, using manually entered key\n{0}\n\n" + 
                     "MAKE SURE THIS IS THE RIGHT KEY OR YOUR\nEXTRACTED FILES WILL NOT DECRYPT CORRECTLY!", 
                     BitConverter.ToString(key).Replace("-", string.Empty) ));
                 return true;
             }
-            msg_Error("Something went horribly wrong and I can't find the key.\nTry entering it manually from the File menu.");
+            Msg_Error("Something went horribly wrong and I can't find the key.\nTry entering it manually from the File menu.");
             return false;
         }
 
-        public static byte[] readKeyfile(string path)
+        public static byte[] ReadKeyfile(string path)
         {
             byte[] retval = new byte[16];
             
@@ -226,7 +224,7 @@ namespace NAND_Extractor
                 }
                 catch
                 {
-                    msg_Error(string.Format("Can't open key.bin:\n{0}\n" +
+                    Msg_Error(string.Format("Can't open key.bin:\n{0}\n" +
                                             "Try closing any program(s) that may be accessing it.",
                                             path));
                     return null;
@@ -234,12 +232,12 @@ namespace NAND_Extractor
             }
             else
             {
-                msg_Error(string.Format("You tried to open a file that doesn't exist:\n{0}", path));
+                Msg_Error(string.Format("You tried to open a file that doesn't exist:\n{0}", path));
                 return null;
             }
         }
 
-        private Int32 findSuperblock()
+        private Int32 FindSuperblock()
         {
             Int32 loc, current, last = 0;
             Int32[] n_start = { 0x1FC00000, 0x20BE0000, 0x20BE0000 },
@@ -250,7 +248,7 @@ namespace NAND_Extractor
 
             for (loc = n_start[type]; loc < n_end[type]; loc += n_len[type])
             {
-                current = (int) bswap(rom.ReadUInt32());
+                current = (int) Bswap(rom.ReadUInt32());
                 
                 if (current > last)
                     last = current;
@@ -263,26 +261,25 @@ namespace NAND_Extractor
             return -1;
         }
 
-        private byte[] getCluster(UInt16 cluster_entry)
+        private byte[] GetCluster(UInt16 cluster_entry)
         {
             Int32[] n_clusterlen = { 0x4000, 0x4200, 0x4200 };
             Int32[] n_pagelen = { 0x800, 0x840, 0x840 };
 
             byte[] cluster = new byte[0x4000];
-            byte[] page = new byte[ n_pagelen[type] ];
 
             rom.BaseStream.Seek(cluster_entry * n_clusterlen[type], SeekOrigin.Begin);
 
             for (int i = 0; i < 8; i++)
             {
-                page = rom.ReadBytes( n_pagelen[type] );
+                byte[] page = rom.ReadBytes(n_pagelen[type]);
                 Buffer.BlockCopy(page, 0, cluster, i * 0x800, 0x800);
             }
 
-            return aesDecrypt(key, iv, cluster);
+            return AesDecrypt(key, iv, cluster);
         }
 
-        private UInt16 getFAT(UInt16 fat_entry)
+        private UInt16 GetFAT(UInt16 fat_entry)
         {
             /*
              * compensate for "off-16" storage at beginning of superblock
@@ -294,31 +291,31 @@ namespace NAND_Extractor
 
             // location in fat of cluster chain
             Int32[] n_fat = { 0, 0x20, 0x20 };
-            int loc = loc_fat + ((((fat_entry / 0x400) * n_fat[type]) + fat_entry) * 2);
+            int loc = loc_fat + (fat_entry / 0x400 * n_fat[type] + fat_entry) * 2;
 
             rom.BaseStream.Seek(loc, SeekOrigin.Begin);
-            return bswap(rom.ReadUInt16());
+            return Bswap(rom.ReadUInt16());
         }
 
-        private fst_t getFST(UInt16 entry)
+        private Fst_t GetFST(UInt16 entry)
         {
-            fst_t fst = new fst_t();
+            Fst_t fst = new Fst_t();
 
             // compensate for 64 bytes of ecc data every 64 fst entries
             Int32[] n_fst = { 0, 2, 2 };
-            int loc_entry = (((entry / 0x40) * n_fst[type]) + entry) * 0x20;
+            int loc_entry = (entry / 0x40 * n_fst[type] + entry) * 0x20;
 
             rom.BaseStream.Seek(loc_fst + loc_entry, SeekOrigin.Begin);
 
             fst.filename = rom.ReadBytes(0x0C);
             fst.mode = rom.ReadByte();
             fst.attr = rom.ReadByte();
-            fst.sub = bswap(rom.ReadUInt16());
-            fst.sib = bswap(rom.ReadUInt16());
-            fst.size = bswap(rom.ReadUInt32());
-            fst.uid = bswap(rom.ReadUInt32());
-            fst.gid = bswap(rom.ReadUInt16());
-            fst.x3 = bswap(rom.ReadUInt32());
+            fst.sub = Bswap(rom.ReadUInt16());
+            fst.sib = Bswap(rom.ReadUInt16());
+            fst.size = Bswap(rom.ReadUInt32());
+            fst.uid = Bswap(rom.ReadUInt32());
+            fst.gid = Bswap(rom.ReadUInt16());
+            fst.x3 = Bswap(rom.ReadUInt32());
 
             fst.mode &= 1;
 
@@ -329,34 +326,34 @@ namespace NAND_Extractor
         /*
          * Viewer functions.
          */
-        private void viewFST(UInt16 entry, UInt16 parent)
+        private void ViewFST(UInt16 entry, UInt16 parent)
         {
-            fst_t fst = getFST(entry);
+            Fst_t fst = GetFST(entry);
 
             if (fst.sib != 0xffff)
-                viewFST(fst.sib, parent);
+                ViewFST(fst.sib, parent);
 
-            addEntry(fst, entry, parent);
+            AddEntry(fst, entry, parent);
             
             info.Items["size"].Text = (Convert.ToInt32(info.Items["size"].Text) + (int)fst.size).ToString();
             info.Items["files"].Text = (Convert.ToInt32(info.Items["files"].Text) + 1).ToString();
             Application.DoEvents();
         }
 
-        private void addEntry(fst_t fst, UInt16 entry, UInt16 parent)
+        private void AddEntry(Fst_t fst, UInt16 entry, UInt16 parent)
         {
             string details;
             string[] modes = { "d|", "f|" };
             TreeNode[] node = fileView.Nodes.Find(parent.ToString("x4"), true);
             
             details = ASCIIEncoding.ASCII.GetString(fst.filename).Replace("\0", " ");
-            details += txtPadLeft(modes[fst.mode], 5);
-            details += txtPadRight( fst.attr.ToString(), 3 );
+            details += TxtPadLeft(modes[fst.mode], 5);
+            details += TxtPadRight( fst.attr.ToString(), 3 );
             details += string.Format("{0}:{1}", 
                             fst.uid.ToString("x4").ToUpper(),
                             fst.gid.ToString("x4").ToUpper() );
             if (fst.size > 0)
-                details += txtPadLeft(fst.size.ToString("d"), 11) + "B";
+                details += TxtPadLeft(fst.size.ToString("d"), 11) + "B";
            
             if (entry != 0)
             {
@@ -367,19 +364,19 @@ namespace NAND_Extractor
             }
 
             if (fst.mode == 0 && fst.sub != 0xffff)
-                viewFST(fst.sub, entry);
+                ViewFST(fst.sub, entry);
         }
         
 
         /*
          * Extraction functions.
          */
-        private void extractNAND()
+        private void ExtractNAND()
         {
             if (!SetUpExtractPath())
                 return;
 
-            statusText("Extracting NAND...");
+            StatusText("Extracting NAND...");
 
             rom = new BinaryReader(File.Open(Properties.Settings.Default.NandPath,
                                                     FileMode.Open,
@@ -387,9 +384,9 @@ namespace NAND_Extractor
                                                     FileShare.Read),
                                                 Encoding.ASCII);
 
-            extractFST(0, "");
+            ExtractFST(0, "");
 
-            statusText(string.Empty);
+            StatusText(string.Empty);
 
             rom.Close();
         }
@@ -398,8 +395,10 @@ namespace NAND_Extractor
         {
             if (string.IsNullOrEmpty(Properties.Settings.Default.ExtractPath))
             {
-                var dialog = new CommonOpenFileDialog();
-                dialog.IsFolderPicker = true;
+                var dialog = new CommonOpenFileDialog
+                {
+                    IsFolderPicker = true
+                };
                 if (dialog.ShowDialog() != CommonFileDialogResult.Ok)
                     return false;
 
@@ -415,57 +414,57 @@ namespace NAND_Extractor
             return true;
         }
 
-        private void extractFST(UInt16 entry, string parent)
+        private void ExtractFST(UInt16 entry, string parent)
         {
-            fst_t fst = getFST(entry);
+            Fst_t fst = GetFST(entry);
 
             if (fst.sib != 0xffff)
-                extractFST(fst.sib, parent);
+                ExtractFST(fst.sib, parent);
 
             switch (fst.mode)
             {
                 case 0:
-                    extractDir(fst, entry, parent);
+                    ExtractDir(fst, parent);
                     break;
                 case 1:
-                    extractFile(fst, entry, parent);
+                    ExtractFile(fst, parent);
                     break;
                 default:
-                    msg_Error(String.Format("Ignoring unsupported mode {0}.\n\t\t(FST entry #{1})",
+                    Msg_Error(String.Format("Ignoring unsupported mode {0}.\n\t\t(FST entry #{1})",
                                                 fst.mode, 
                                                 entry.ToString("x4")));
                     break;
             }
         }
 
-        private void extractSingleFST(UInt16 entry, string parent)
+        private void ExtractSingleFST(UInt16 entry, string parent)
         {
             if (!SetUpExtractPath())
                 return;
 
-            fst_t fst = getFST(entry);
+            Fst_t fst = GetFST(entry);
 
             switch (fst.mode)
             {
                 case 0:
-                    extractDir(fst, entry, parent);
+                    ExtractDir(fst, parent);
                     break;
                 case 1:
-                    extractFile(fst, entry, parent);
+                    ExtractFile(fst, parent);
                     break;
                 default:
-                    msg_Error(String.Format("Ignoring unsupported mode {0}.\n\t\t(FST entry #{1})",
+                    Msg_Error(String.Format("Ignoring unsupported mode {0}.\n\t\t(FST entry #{1})",
                                                 fst.mode, 
                                                 entry.ToString("x4")));
                     break;
             }
         }
 
-        private void extractDir(fst_t fst, UInt16 entry, string parent)
+        private void ExtractDir(Fst_t fst, string parent)
         {
             string filename = ASCIIEncoding.ASCII.GetString(fst.filename).Replace("\0", string.Empty);
 
-            statusText(string.Format("Extracting:  {0}", filename));
+            StatusText(string.Format("Extracting:  {0}", filename));
 
             if (filename != "/")
             {
@@ -476,15 +475,14 @@ namespace NAND_Extractor
             }
 
             if (fst.sub != 0xffff)
-                extractFST(fst.sub, filename);
+                ExtractFST(fst.sub, filename);
         }
 
-        private void extractFile(fst_t fst, UInt16 entry, string parent)
+        private void ExtractFile(Fst_t fst, string parent)
         {
             UInt16 fat;
             int cluster_span = (int) (fst.size / 0x4000) + 1;
-            byte[] cluster = new byte[0x4000],
-                   data = new byte[cluster_span * 0x4000];
+            byte[] data = new byte[cluster_span * 0x4000];
 
             string filename = 
                             ASCIIEncoding.ASCII.GetString(fst.filename).
@@ -504,9 +502,9 @@ namespace NAND_Extractor
                 fat = fst.sub;
                 for (int i = 0; fat < 0xFFF0; i++)
                 {
-                    statusText(string.Format("Extracting:  {0} (cluster {1})", filename, fat));
-                    Buffer.BlockCopy(getCluster(fat), 0, data, i * 0x4000, 0x4000);
-                    fat = getFAT(fat);
+                    StatusText(string.Format("Extracting:  {0} (cluster {1})", filename, fat));
+                    Buffer.BlockCopy(GetCluster(fat), 0, data, i * 0x4000, 0x4000);
+                    fat = GetFAT(fat);
                 }
 
                 bw.Write(data, 0, (int)fst.size);
@@ -514,26 +512,26 @@ namespace NAND_Extractor
             }
             catch
             {
-                msg_Error($"Can't open file for writing:\n{filePath}" );
+                Msg_Error($"Can't open file for writing:\n{filePath}" );
             }
         }
-
-
 
         /*
          * Crypto functions (encryption unused, but included for reference).
          * Key required length of 16 bytes.
          * IV can be from 1 to 16 byte(s) and will be padded with 0x00.
          */
-        private byte[] aesDecrypt(byte[] key, byte[] iv, byte[] enc_data)
+        private byte[] AesDecrypt(byte[] key, byte[] iv, byte[] enc_data)
         {
             // zero out any remaining iv bytes
             byte[] iv16 = new byte[16];
             Buffer.BlockCopy(iv, 0, iv16, 0, iv.Length);
 
-            RijndaelManaged aes = new RijndaelManaged();
-            aes.Padding = PaddingMode.None;
-            aes.Mode = CipherMode.CBC;
+            RijndaelManaged aes = new RijndaelManaged
+            {
+                Padding = PaddingMode.None,
+                Mode = CipherMode.CBC
+            };
 
             ICryptoTransform decryptor = aes.CreateDecryptor(key, iv16);
             MemoryStream memoryStream = new MemoryStream(enc_data);
@@ -542,83 +540,48 @@ namespace NAND_Extractor
                                                       CryptoStreamMode.Read);
 
             byte[] dec_data = new byte[enc_data.Length];
-
-            int decryptedByteCount = cryptoStream.Read(dec_data, 0,
-                                                   dec_data.Length);
+            _ = cryptoStream.Read(dec_data, 0, dec_data.Length);
 
             memoryStream.Close();
             cryptoStream.Close();
-
-            //Console.WriteLine("Decrypted {0} bytes:", decryptedByteCount);
 
             Application.DoEvents();
             return dec_data;
         }
 
-        private byte[] aesEncrypt(byte[] key, byte[] iv, byte[] dec_data)
-        {
-            // zero out any remaining iv bytes
-            byte[] iv16 = new byte[16];
-            Buffer.BlockCopy(iv, 0, iv16, 0, iv.Length);
-
-            RijndaelManaged aes = new RijndaelManaged();
-            aes.Padding = PaddingMode.None;
-            aes.Mode = CipherMode.CBC;
-
-            ICryptoTransform encryptor = aes.CreateEncryptor(key, iv16);
-            MemoryStream memoryStream = new MemoryStream(dec_data);
-            CryptoStream cryptoStream = new CryptoStream(memoryStream,
-                                                      encryptor,
-                                                      CryptoStreamMode.Read);
-
-            byte[] enc_data = new byte[dec_data.Length];
-
-            int encryptedByteCount = cryptoStream.Read(enc_data, 0,
-                                                   enc_data.Length);
-
-            memoryStream.Close();
-            cryptoStream.Close();
-
-            //Console.WriteLine("Encrypted {0} bytes:", encryptedByteCount);
-
-            Application.DoEvents();
-            return enc_data;
-        }
-
-
         /*
          * Helper/misc functions.
          */
-        public static void msg_Error(string message)
+        public static void Msg_Error(string message)
         {
             MessageBox.Show(Form.ActiveForm, message, "Error!", 
                                 MessageBoxButtons.OK, 
                                 MessageBoxIcon.Error);
         }
 
-        public static void msg_Info(string message)
+        public static void Msg_Info(string message)
         {
             MessageBox.Show(Form.ActiveForm, message, "Information!", 
                                 MessageBoxButtons.OK, 
                                 MessageBoxIcon.Information);
         }
 
-        public static UInt16 bswap(UInt16 value)
+        public static UInt16 Bswap(UInt16 value)
         {
             return (UInt16)((0x00FF & (value >> 8))
                              | (0xFF00 & (value << 8)));
         }
 
-        public static UInt32 bswap(UInt32 value)
+        public static UInt32 Bswap(UInt32 value)
         {
-            UInt32 swapped = ((0x000000FF) & (value >> 24)
+            UInt32 swapped = (0x000000FF) & (value >> 24)
                              | (0x0000FF00) & (value >> 8)
                              | (0x00FF0000) & (value << 8)
-                             | (0xFF000000) & (value << 24));
+                             | (0xFF000000) & (value << 24);
             return swapped;
         }
 
-        public static byte[] strToByte(string hexString)
+        public static byte[] StrToByte(string hexString)
         {
             hexString = System.Text.RegularExpressions.Regex.Replace(hexString.ToUpper(), "[^0-9A-F]", string.Empty);
             byte[] b = new byte[hexString.Length / 2];
@@ -628,7 +591,7 @@ namespace NAND_Extractor
             return b;
         }
 
-        public void statusText(string message)
+        public void StatusText(string message)
         {
             status.Text = message.Replace("\\", "/");
             if (message == string.Empty)
@@ -644,20 +607,20 @@ namespace NAND_Extractor
             Application.DoEvents();
         }
 
-        public void nandExtractor_Resize(object sender, System.EventArgs e)
+        public void NandExtractor_Resize(object sender, System.EventArgs e)
         {
             this.fileView.Width = Size.Width - 28;
             this.fileView.Height = Size.Height - 102; // 80 w/out new info bar
         }
 
-        private string txtPadLeft(string textString, int desiredLength)
+        private string TxtPadLeft(string textString, int desiredLength)
         {
             while (textString.Length < desiredLength)
                 textString = string.Concat(" ", textString);
             return textString;
         }
         
-        private string txtPadRight(string textString, int desiredLength)
+        private string TxtPadRight(string textString, int desiredLength)
         {
             while (textString.Length < desiredLength)
                 textString = string.Concat(textString, " ");
@@ -669,24 +632,24 @@ namespace NAND_Extractor
          * Menu functions.
          */
 
-        private void openToolStripMenuItem_Click(object sender, EventArgs e)
+        private void OpenToolStripMenuItem_Click(object sender, EventArgs e)
         {
             FileOpen();
         }
 
-        private void extractToolStripMenuItem_Click(object sender, EventArgs e)
+        private void ExtractToolStripMenuItem_Click(object sender, EventArgs e)
         {
             extractTime.Text = string.Empty;
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var stopwatch = Stopwatch.StartNew();
 
-            extractNAND();
+            ExtractNAND();
 
             stopwatch.Stop();
 
             extractTime.Text = stopwatch.Elapsed.ToString();
         }
 
-        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        private void AboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
             MessageBox.Show(this,   "Wii NAND Extractor\n" +
                                     "Version " + FileVersionInfo.GetVersionInfo(GetType().Assembly.Location).ProductVersion + "\n\n" +
@@ -697,18 +660,18 @@ namespace NAND_Extractor
                                 MessageBoxIcon.Question);
         }
 
-        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        private void ExitToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Application.Exit();
         }
 
-        private void contextExtract_Click(object sender, EventArgs e)
+        private void ContextExtract_Click(object sender, EventArgs e)
         {
             if (fileView.SelectedNode == null)
-                msg_Error("Try choosing a file/directory.");
+                Msg_Error("Try choosing a file/directory.");
             else
             {
-                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                var stopwatch = Stopwatch.StartNew();
 
                 rom = new BinaryReader(File.Open(Properties.Settings.Default.NandPath,
                                                     FileMode.Open,
@@ -716,25 +679,25 @@ namespace NAND_Extractor
                                                     FileShare.Read),
                                                 Encoding.ASCII);
                 if (rom.BaseStream.Length > 0)
-                    extractSingleFST(Convert.ToUInt16(fileView.SelectedNode.Name, 16), "");
+                    ExtractSingleFST(Convert.ToUInt16(fileView.SelectedNode.Name, 16), "");
 
                 rom.Close();
 
                 stopwatch.Stop();
 
-                statusText(string.Empty);
+                StatusText(string.Empty);
                 extractTime.Text = stopwatch.Elapsed.ToString();
             }
         }
 
-        private void fileView_MouseDown(object sender, MouseEventArgs e)
+        private void FileView_MouseDown(object sender, MouseEventArgs e)
         {
             if(e.Button != MouseButtons.Right)
                 return;
             fileView.SelectedNode = fileView.GetNodeAt(e.X,e.Y);
         }
 
-        private void enterNandKeyMenuItem_Click(object sender, EventArgs e)
+        private void EnterNandKeyMenuItem_Click(object sender, EventArgs e)
         {
             Form frm = new NandKey();
             frm.ShowDialog(this);

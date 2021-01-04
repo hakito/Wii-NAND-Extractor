@@ -108,7 +108,7 @@ namespace NAND_Extractor
             this.openFileMenu.Name = "openFileMenu";
             this.openFileMenu.Size = new System.Drawing.Size(157, 22);
             this.openFileMenu.Text = "&Open";
-            this.openFileMenu.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
+            this.openFileMenu.Click += new System.EventHandler(this.OpenToolStripMenuItem_Click);
             // 
             // extractAllFileMenu
             // 
@@ -118,7 +118,7 @@ namespace NAND_Extractor
             this.extractAllFileMenu.ShowShortcutKeys = false;
             this.extractAllFileMenu.Size = new System.Drawing.Size(157, 22);
             this.extractAllFileMenu.Text = "&Extract All";
-            this.extractAllFileMenu.Click += new System.EventHandler(this.extractToolStripMenuItem_Click);
+            this.extractAllFileMenu.Click += new System.EventHandler(this.ExtractToolStripMenuItem_Click);
             // 
             // toolStripSeparator1
             // 
@@ -131,7 +131,7 @@ namespace NAND_Extractor
             this.enterNandKeyFileMenu.Name = "enterNandKeyFileMenu";
             this.enterNandKeyFileMenu.Size = new System.Drawing.Size(157, 22);
             this.enterNandKeyFileMenu.Text = "Enter &NAND Key";
-            this.enterNandKeyFileMenu.Click += new System.EventHandler(this.enterNandKeyMenuItem_Click);
+            this.enterNandKeyFileMenu.Click += new System.EventHandler(this.EnterNandKeyMenuItem_Click);
             // 
             // toolStripSeparator3
             // 
@@ -144,7 +144,7 @@ namespace NAND_Extractor
             this.aboutFileMenu.Name = "aboutFileMenu";
             this.aboutFileMenu.Size = new System.Drawing.Size(157, 22);
             this.aboutFileMenu.Text = "&About";
-            this.aboutFileMenu.Click += new System.EventHandler(this.aboutToolStripMenuItem_Click);
+            this.aboutFileMenu.Click += new System.EventHandler(this.AboutToolStripMenuItem_Click);
             // 
             // toolStripSeparator2
             // 
@@ -157,7 +157,7 @@ namespace NAND_Extractor
             this.exitFileMenu.Name = "exitFileMenu";
             this.exitFileMenu.Size = new System.Drawing.Size(157, 22);
             this.exitFileMenu.Text = "E&xit";
-            this.exitFileMenu.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
+            this.exitFileMenu.Click += new System.EventHandler(this.ExitToolStripMenuItem_Click);
             // 
             // openFileDialog
             // 
@@ -176,7 +176,7 @@ namespace NAND_Extractor
             this.fileView.ShowNodeToolTips = true;
             this.fileView.Size = new System.Drawing.Size(453, 253);
             this.fileView.TabIndex = 2;
-            this.fileView.MouseDown += new System.Windows.Forms.MouseEventHandler(this.fileView_MouseDown);
+            this.fileView.MouseDown += new System.Windows.Forms.MouseEventHandler(this.FileView_MouseDown);
             // 
             // contextMenu
             // 
@@ -192,7 +192,7 @@ namespace NAND_Extractor
             this.contextExtract.Name = "contextExtract";
             this.contextExtract.Size = new System.Drawing.Size(110, 22);
             this.contextExtract.Text = "Extract";
-            this.contextExtract.Click += new System.EventHandler(this.contextExtract_Click);
+            this.contextExtract.Click += new System.EventHandler(this.ContextExtract_Click);
             // 
             // statusStrip
             // 
@@ -299,7 +299,7 @@ namespace NAND_Extractor
             this.MainMenuStrip = this.menuMain;
             this.Name = "nandExtractor";
             this.Text = "Wii NAND Extractor";
-            this.Resize += new System.EventHandler(this.nandExtractor_Resize);
+            this.Resize += new System.EventHandler(this.NandExtractor_Resize);
             this.menuMain.ResumeLayout(false);
             this.menuMain.PerformLayout();
             this.contextMenu.ResumeLayout(false);

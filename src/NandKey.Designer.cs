@@ -56,7 +56,7 @@ namespace NAND_Extractor
             this.textBox.Name = "textBox";
             this.textBox.Size = new System.Drawing.Size(192, 20);
             this.textBox.TabIndex = 0;
-            this.textBox.TextChanged += new System.EventHandler(this.textBox_TextChanged);
+            this.textBox.TextChanged += new System.EventHandler(this.TextBox_TextChanged);
             // 
             // buttonOk
             // 
@@ -66,7 +66,7 @@ namespace NAND_Extractor
             this.buttonOk.TabIndex = 1;
             this.buttonOk.Text = "OK";
             this.buttonOk.UseVisualStyleBackColor = true;
-            this.buttonOk.Click += new System.EventHandler(this.buttonOk_Click);
+            this.buttonOk.Click += new System.EventHandler(this.ButtonOk_Click);
             // 
             // buttonCancel
             // 
@@ -76,7 +76,7 @@ namespace NAND_Extractor
             this.buttonCancel.TabIndex = 2;
             this.buttonCancel.Text = "Cancel";
             this.buttonCancel.UseVisualStyleBackColor = true;
-            this.buttonCancel.Click += new System.EventHandler(this.buttonCancel_Click);
+            this.buttonCancel.Click += new System.EventHandler(this.ButtonCancel_Click);
             // 
             // NandKey
             // 

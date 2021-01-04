@@ -16,12 +16,6 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 
 namespace NAND_Extractor
@@ -33,7 +27,7 @@ namespace NAND_Extractor
             InitializeComponent();
         }
 
-        private void textBox_TextChanged(object sender, EventArgs e)
+        private void TextBox_TextChanged(object sender, EventArgs e)
         {
             int i = textBox.SelectionStart;
             textBox.Text = textBox.Text.Replace(" ", string.Empty);
@@ -43,21 +37,21 @@ namespace NAND_Extractor
                 textBox.SelectionStart = i;
         }
 
-        private void buttonOk_Click(object sender, EventArgs e)
+        private void ButtonOk_Click(object sender, EventArgs e)
         {
             if (textBox.Text.Length == 32)
             {
                 Properties.Settings.Default.nand_key = textBox.Text;
                 Properties.Settings.Default.Save();
-                this.Close();
+                Close();
             }
             else
-                NandExtractor.msg_Error("Your NAND Key is the wrong length.  It should be 32 characters long.  Please check your key and try again.");
+                NandExtractor.Msg_Error("Your NAND Key is the wrong length.  It should be 32 characters long.  Please check your key and try again.");
         }
 
-        private void buttonCancel_Click(object sender, EventArgs e)
+        private void ButtonCancel_Click(object sender, EventArgs e)
         {
-            this.Close();
+            Close();
         }
     }
 }
