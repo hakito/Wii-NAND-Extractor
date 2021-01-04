@@ -63,7 +63,6 @@ namespace NAND_Extractor
          */
         public static byte[] key = new byte[16];
         public static byte[] iv = new byte[16];
-        public static BinaryReader rom;
         public static Int32 loc_super;
         public static Int32 loc_fat;
         public static Int32 loc_fst;
@@ -108,16 +107,7 @@ namespace NAND_Extractor
             fileView.Nodes.Clear();
             fileView.Nodes.Add("0000", filename + details_desc, 2, 2);
 
-            if (InitNand())
-            {
-                ViewFST(0, 0);
-
-                fileView.Sort();
-                fileView.Nodes["0000"].Expand();
-
-                rom.Close();
-            }
-            else
+            if (!InitNand())
                 Msg_Error("Invalid or unsupported dump.");
 
             StatusText(string.Empty);
@@ -125,7 +115,7 @@ namespace NAND_Extractor
 
         private bool InitNand()
         {
-            rom = new BinaryReader(File.Open(Properties.Settings.Default.NandPath, 
+            using var rom = new BinaryReader(File.Open(Properties.Settings.Default.NandPath, 
                                         FileMode.Open, 
                                         FileAccess.Read,
                                         FileShare.Read), 
@@ -134,11 +124,11 @@ namespace NAND_Extractor
                 
             type = GetDumpType(rom.BaseStream.Length);
             
-            if ( GetKey(type) )
+            if ( GetKey(type, rom) )
             {
                 try
                 {
-                    loc_super = FindSuperblock();
+                    loc_super = FindSuperblock(rom);
                 }
                 catch
                 {
@@ -151,6 +141,11 @@ namespace NAND_Extractor
                 Int32[] n_fatlen = { 0x010000, 0x010800, 0x010800 };
                 loc_fat = loc_super;
                 loc_fst = loc_fat + 0x0C + n_fatlen[type];
+
+                ViewFST(0, 0, rom);
+
+                fileView.Sort();
+                fileView.Nodes["0000"].Expand();
                 return true;
 
             }
@@ -168,7 +163,7 @@ namespace NAND_Extractor
             return -1;
         }
 
-        private bool GetKey(int type)
+        private bool GetKey(int type, BinaryReader rom)
         {
             var keyPath = Path.Combine(Path.GetDirectoryName(Properties.Settings.Default.NandPath), "keys.bin");
             switch (type)
@@ -237,7 +232,7 @@ namespace NAND_Extractor
             }
         }
 
-        private Int32 FindSuperblock()
+        private Int32 FindSuperblock(BinaryReader rom)
         {
             Int32 loc, current, last = 0;
             Int32[] n_start = { 0x1FC00000, 0x20BE0000, 0x20BE0000 },
@@ -261,7 +256,7 @@ namespace NAND_Extractor
             return -1;
         }
 
-        private byte[] GetCluster(UInt16 cluster_entry)
+        private byte[] GetCluster(UInt16 cluster_entry, BinaryReader rom)
         {
             Int32[] n_clusterlen = { 0x4000, 0x4200, 0x4200 };
             Int32[] n_pagelen = { 0x800, 0x840, 0x840 };
@@ -279,7 +274,7 @@ namespace NAND_Extractor
             return AesDecrypt(key, iv, cluster);
         }
 
-        private UInt16 GetFAT(UInt16 fat_entry)
+        private UInt16 GetFAT(UInt16 fat_entry, BinaryReader rom)
         {
             /*
              * compensate for "off-16" storage at beginning of superblock
@@ -297,7 +292,7 @@ namespace NAND_Extractor
             return Bswap(rom.ReadUInt16());
         }
 
-        private Fst_t GetFST(UInt16 entry)
+        private Fst_t GetFST(UInt16 entry, BinaryReader rom)
         {
             Fst_t fst = new Fst_t();
 
@@ -322,25 +317,24 @@ namespace NAND_Extractor
             return fst;
         }
 
-
         /*
          * Viewer functions.
          */
-        private void ViewFST(UInt16 entry, UInt16 parent)
+        private void ViewFST(UInt16 entry, UInt16 parent, BinaryReader rom)
         {
-            Fst_t fst = GetFST(entry);
+            Fst_t fst = GetFST(entry, rom);
 
             if (fst.sib != 0xffff)
-                ViewFST(fst.sib, parent);
+                ViewFST(fst.sib, parent, rom);
 
-            AddEntry(fst, entry, parent);
+            AddEntry(fst, entry, parent, rom);
             
             info.Items["size"].Text = (Convert.ToInt32(info.Items["size"].Text) + (int)fst.size).ToString();
             info.Items["files"].Text = (Convert.ToInt32(info.Items["files"].Text) + 1).ToString();
             Application.DoEvents();
         }
 
-        private void AddEntry(Fst_t fst, UInt16 entry, UInt16 parent)
+        private void AddEntry(Fst_t fst, UInt16 entry, UInt16 parent, BinaryReader rom)
         {
             string details;
             string[] modes = { "d|", "f|" };
@@ -364,7 +358,7 @@ namespace NAND_Extractor
             }
 
             if (fst.mode == 0 && fst.sub != 0xffff)
-                ViewFST(fst.sub, entry);
+                ViewFST(fst.sub, entry, rom);
         }
         
 
@@ -378,17 +372,15 @@ namespace NAND_Extractor
 
             StatusText("Extracting NAND...");
 
-            rom = new BinaryReader(File.Open(Properties.Settings.Default.NandPath,
+            using var rom = new BinaryReader(File.Open(Properties.Settings.Default.NandPath,
                                                     FileMode.Open,
                                                     FileAccess.Read,
                                                     FileShare.Read),
                                                 Encoding.ASCII);
 
-            ExtractFST(0, "");
+            ExtractFST(0, "", rom);
 
             StatusText(string.Empty);
-
-            rom.Close();
         }
 
         private static bool SetUpExtractPath()
@@ -414,20 +406,20 @@ namespace NAND_Extractor
             return true;
         }
 
-        private void ExtractFST(UInt16 entry, string parent)
+        private void ExtractFST(UInt16 entry, string parent, BinaryReader rom)
         {
-            Fst_t fst = GetFST(entry);
+            Fst_t fst = GetFST(entry, rom);
 
             if (fst.sib != 0xffff)
-                ExtractFST(fst.sib, parent);
+                ExtractFST(fst.sib, parent, rom);
 
             switch (fst.mode)
             {
                 case 0:
-                    ExtractDir(fst, parent);
+                    ExtractDir(fst, parent, rom);
                     break;
                 case 1:
-                    ExtractFile(fst, parent);
+                    ExtractFile(fst, parent, rom);
                     break;
                 default:
                     Msg_Error(String.Format("Ignoring unsupported mode {0}.\n\t\t(FST entry #{1})",
@@ -437,20 +429,20 @@ namespace NAND_Extractor
             }
         }
 
-        private void ExtractSingleFST(UInt16 entry, string parent)
+        private void ExtractSingleFST(UInt16 entry, string parent, BinaryReader rom)
         {
             if (!SetUpExtractPath())
                 return;
 
-            Fst_t fst = GetFST(entry);
+            Fst_t fst = GetFST(entry, rom);
 
             switch (fst.mode)
             {
                 case 0:
-                    ExtractDir(fst, parent);
+                    ExtractDir(fst, parent, rom);
                     break;
                 case 1:
-                    ExtractFile(fst, parent);
+                    ExtractFile(fst, parent, rom);
                     break;
                 default:
                     Msg_Error(String.Format("Ignoring unsupported mode {0}.\n\t\t(FST entry #{1})",
@@ -460,7 +452,7 @@ namespace NAND_Extractor
             }
         }
 
-        private void ExtractDir(Fst_t fst, string parent)
+        private void ExtractDir(Fst_t fst, string parent, BinaryReader rom)
         {
             string filename = ASCIIEncoding.ASCII.GetString(fst.filename).Replace("\0", string.Empty);
 
@@ -475,17 +467,17 @@ namespace NAND_Extractor
             }
 
             if (fst.sub != 0xffff)
-                ExtractFST(fst.sub, filename);
+                ExtractFST(fst.sub, filename, rom);
         }
 
-        private void ExtractFile(Fst_t fst, string parent)
+        private void ExtractFile(Fst_t fst, string parent, BinaryReader rom)
         {
             UInt16 fat;
             int cluster_span = (int) (fst.size / 0x4000) + 1;
             byte[] data = new byte[cluster_span * 0x4000];
 
-            string filename = 
-                            ASCIIEncoding.ASCII.GetString(fst.filename).
+            string filename =
+                            Encoding.ASCII.GetString(fst.filename).
                             Replace("\0", string.Empty).
                             Replace(":", "-");
             if (parent != null)
@@ -503,8 +495,8 @@ namespace NAND_Extractor
                 for (int i = 0; fat < 0xFFF0; i++)
                 {
                     StatusText(string.Format("Extracting:  {0} (cluster {1})", filename, fat));
-                    Buffer.BlockCopy(GetCluster(fat), 0, data, i * 0x4000, 0x4000);
-                    fat = GetFAT(fat);
+                    Buffer.BlockCopy(GetCluster(fat, rom), 0, data, i * 0x4000, 0x4000);
+                    fat = GetFAT(fat, rom);
                 }
 
                 bw.Write(data, 0, (int)fst.size);
@@ -673,13 +665,13 @@ namespace NAND_Extractor
             {
                 var stopwatch = Stopwatch.StartNew();
 
-                rom = new BinaryReader(File.Open(Properties.Settings.Default.NandPath,
+                using var rom = new BinaryReader(File.Open(Properties.Settings.Default.NandPath,
                                                     FileMode.Open,
                                                     FileAccess.Read,
                                                     FileShare.Read),
                                                 Encoding.ASCII);
                 if (rom.BaseStream.Length > 0)
-                    ExtractSingleFST(Convert.ToUInt16(fileView.SelectedNode.Name, 16), "");
+                    ExtractSingleFST(Convert.ToUInt16(fileView.SelectedNode.Name, 16), "", rom);
 
                 rom.Close();
 
