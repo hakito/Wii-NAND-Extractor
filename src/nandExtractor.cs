@@ -485,11 +485,13 @@ namespace NAND_Extractor
             byte[] cluster = new byte[0x4000],
                    data = new byte[cluster_span * 0x4000];
 
-            string filename = parent + "\\" +
+            string filename = 
                             ASCIIEncoding.ASCII.GetString(fst.filename).
                             Replace("\0", string.Empty).
                             Replace(":", "-");
+            if (parent != null)
 
+                filename = Path.Combine(parent, filename);
             var filePath = Path.Combine(Properties.Settings.Default.ExtractPath, filename);
             try
             {
