@@ -20,7 +20,7 @@ This project is a fork of [Wii NAND Extractor by Ben Williams](https://sites.goo
 ## Copyright
 
 * Copyright 2009 Ben Wilson / [parannoyed](http://sites.google.com/site/parannoyedwii/)
-* Copyright 2020 Gerd Katzenbeisser
+* Copyright 2020, 2021 Gerd Katzenbeisser
 
 ## Thanks to
 

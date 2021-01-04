@@ -17,6 +17,7 @@
 
 using Microsoft.WindowsAPICodePack.Dialogs;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -688,9 +689,10 @@ namespace NAND_Extractor
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
             MessageBox.Show(this,   "Wii NAND Extractor\n" +
-                                    "Version " + Application.ProductVersion + "\n\n" +
+                                    "Version " + FileVersionInfo.GetVersionInfo(GetType().Assembly.Location).ProductVersion + "\n\n" +
                                     "Copyright 2009 Ben Wilson / parannoyed\n" +
-                                    "http://sites.google.com/site/parannoyedwii/", "About",
+                                    "http://sites.google.com/site/parannoyedwii/" +
+                                    "Copyright 2020, 2021 Gerd Katzenbeisser", "About",
                                 MessageBoxButtons.OK,
                                 MessageBoxIcon.Question);
         }

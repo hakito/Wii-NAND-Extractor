@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 20210103: 1.1.1 - Export single file
+
+* Fix exporting a single file
+* Extend copyright in about dialog
+
 ## 20201228: 1.1 - Fork with usability improvements
 
 * Export folder can be chosen upon export
