@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## WIP: 1.2.0 - Multi-platform
+
+* Exception based error handling
+
 ## 20210103: 1.1.1 - Export single file
 
 * Fix exporting a single file

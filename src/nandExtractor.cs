@@ -1,6 +1,6 @@
 ﻿/*  This file is part of Wii NAND Extractor.
  *  Copyright (C) 2009 Ben Wilson
- *  
+ *
  *  Wii NAND Extractor is free software: you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License as published
  *  by the Free Software Foundation, either version 3 of the License, or
@@ -57,6 +57,13 @@ namespace NAND_Extractor
             public UInt32 x3;
         }
 
+        private enum DumpType
+        {
+             Unknown = -1,
+             NoEcc = 0,
+             Ecc = 1,
+             OldBootMii = 2,
+        }
 
         /*
          * Globals.
@@ -66,7 +73,7 @@ namespace NAND_Extractor
         public static Int32 loc_super;
         public static Int32 loc_fat;
         public static Int32 loc_fst;
-        public static int type = -1;
+        private static DumpType type = DumpType.Unknown;
 
 
         /*
@@ -107,167 +114,164 @@ namespace NAND_Extractor
             fileView.Nodes.Clear();
             fileView.Nodes.Add("0000", filename + details_desc, 2, 2);
 
-            if (!InitNand())
-                Msg_Error("Invalid or unsupported dump.");
+            try
+            {
+                InitNand();
+            }
+            catch (Exception e)
+            {
+                Msg_Error(e.Message);
+            }
 
             StatusText(string.Empty);
         }
 
-        private bool InitNand()
+        private void InitNand()
         {
-            using var rom = new BinaryReader(File.Open(Properties.Settings.Default.NandPath, 
-                                        FileMode.Open, 
+            using var rom = new BinaryReader(File.Open(Properties.Settings.Default.NandPath,
+                                        FileMode.Open,
                                         FileAccess.Read,
-                                        FileShare.Read), 
+                                        FileShare.Read),
                                     Encoding.ASCII);
 
-                
+
             type = GetDumpType(rom.BaseStream.Length);
-            
-            if ( GetKey(type, rom) )
+
+            LoadKey(type, rom);
+
+            try
             {
-                try
-                {
-                    loc_super = FindSuperblock(rom);
-                }
-                catch
-                {
-                    StatusText("Invalid or non-ECC NAND dump");
-                    fileView.Nodes.Clear();
-                    Msg_Error("Can't find superblock.\nAre you sure this is a Full (with ECC) or BootMii NAND dump?");
-                    return false;
-                }
-
-                Int32[] n_fatlen = { 0x010000, 0x010800, 0x010800 };
-                loc_fat = loc_super;
-                loc_fst = loc_fat + 0x0C + n_fatlen[type];
-
-                ViewFST(0, 0, rom);
-
-                fileView.Sort();
-                fileView.Nodes["0000"].Expand();
-                return true;
-
+                loc_super = FindSuperblock(rom);
             }
-            return false;
+            catch
+            {
+                StatusText("Invalid or non-ECC NAND dump");
+                fileView.Nodes.Clear();
+                throw new InvalidOperationException("Can't find superblock.\nAre you sure this is a Full (with ECC) or BootMii NAND dump?");
+            }
+
+            Int32[] n_fatlen = { 0x010000, 0x010800, 0x010800 };
+            loc_fat = loc_super;
+            loc_fst = loc_fat + 0x0C + n_fatlen[(int)type];
+
+            ViewFST(0, 0, rom);
+
+            fileView.Sort();
+            fileView.Nodes["0000"].Expand();
         }
 
-        private int GetDumpType(Int64 FileSize)
+        private DumpType GetDumpType(Int64 FileSize) => FileSize switch
         {
-            Int64[] sizes = { 536870912,    // type 0 | 536870912 == no ecc
-                              553648128,    // type 1 | 553648128 == ecc
-                              553649152 };  // type 2 | 553649152 == old bootmii
-            for (int i = 0; i < sizes.Count(); i++)
-                if (sizes[i] == FileSize)
-                    return i;
-            return -1;
-        }
+            536870912 => DumpType.NoEcc,
+            553648128 => DumpType.Ecc,
+            553649152 => DumpType.OldBootMii,
+            _ => DumpType.Unknown
+        };
 
-        private bool GetKey(int type, BinaryReader rom)
+        private void LoadKey(DumpType type, BinaryReader rom)
         {
             var keyPath = Path.Combine(Path.GetDirectoryName(Properties.Settings.Default.NandPath), "keys.bin");
-            switch (type)
+
+            try
             {
-                case 0:
-                    key = ReadKeyfile(keyPath);
-                    if (key != null)
-                        return true;
-                    break;
+                switch (type)
+                {
+                    case DumpType.NoEcc:
+                    case DumpType.Ecc:
+                        key = ReadKeyfile(keyPath);
+                        return;
 
-                case 1:
-                    key = ReadKeyfile(keyPath);
-                    if (key != null)
-                        return true;
-                    break;
-                
-                case 2:
-                    rom.BaseStream.Seek(0x21000158, SeekOrigin.Begin);
-                    if (rom.Read(key, 0, 16) > 0)
-                        return true;
-                    break;
+                    case DumpType.OldBootMii:
+                        rom.BaseStream.Seek(0x21000158, SeekOrigin.Begin);
+                        var readBytes = rom.Read(key, 0, 16);
+                        if (readBytes != 16)
+                            throw new InvalidOperationException($"Tried to read 16 bytes as key but only got {readBytes}");
+                        return;
+                    default:
+                        throw new NotImplementedException();
+                };
             }
-
-            if (Properties.Settings.Default.nand_key.Length == 32)
+            catch (Exception) when (Properties.Settings.Default.nand_key?.Length == 32)
             {
                 key = StrToByte(Properties.Settings.Default.nand_key);
-                Msg_Info(string.Format("No new key data found, using manually entered key\n{0}\n\n" + 
-                    "MAKE SURE THIS IS THE RIGHT KEY OR YOUR\nEXTRACTED FILES WILL NOT DECRYPT CORRECTLY!", 
-                    BitConverter.ToString(key).Replace("-", string.Empty) ));
-                return true;
+                Msg_Info(string.Format("No new key data found, using manually entered key\n{0}\n\n" +
+                    "MAKE SURE THIS IS THE RIGHT KEY OR YOUR\nEXTRACTED FILES WILL NOT DECRYPT CORRECTLY!",
+                    BitConverter.ToString(key).Replace("-", string.Empty)));
             }
-            Msg_Error("Something went horribly wrong and I can't find the key.\nTry entering it manually from the File menu.");
-            return false;
         }
 
         public static byte[] ReadKeyfile(string path)
         {
-            byte[] retval = new byte[16];
-            
-            if (File.Exists(path))
+            if (!File.Exists(path))
+                throw new ArgumentException(string.Format("You tried to open a file that doesn't exist:\n{0}", path));
+
+            try
             {
-                try
-                {
-                    BinaryReader br = new BinaryReader(File.Open(path,
-                                FileMode.Open,
-                                FileAccess.Read,
-                                FileShare.Read),
-                                Encoding.ASCII);
-                    br.BaseStream.Seek(0x158, SeekOrigin.Begin);
-                    br.Read(retval, 0, 16);
-                    br.Close();
-                    return retval;
-                }
-                catch
-                {
-                    Msg_Error(string.Format("Can't open key.bin:\n{0}\n" +
-                                            "Try closing any program(s) that may be accessing it.",
-                                            path));
-                    return null;
-                }
+                byte[] retval = new byte[16];
+                BinaryReader br = new BinaryReader(File.Open(path,
+                            FileMode.Open,
+                            FileAccess.Read,
+                            FileShare.Read),
+                            Encoding.ASCII);
+                br.BaseStream.Seek(0x158, SeekOrigin.Begin);
+                br.Read(retval, 0, 16);
+                br.Close();
+                return retval;
             }
-            else
+            catch
             {
-                Msg_Error(string.Format("You tried to open a file that doesn't exist:\n{0}", path));
-                return null;
+                throw new InvalidOperationException(string.Format("Can't open key.bin:\n{0}\n" +
+                                        "Try closing any program(s) that may be accessing it.",
+                                        path));
             }
         }
 
         private Int32 FindSuperblock(BinaryReader rom)
         {
             Int32 loc, current, last = 0;
-            Int32[] n_start = { 0x1FC00000, 0x20BE0000, 0x20BE0000 },
-                    n_end   = { 0x20000000, 0x21000000, 0x21000000 },
-                    n_len   = { 0x40000, 0x42000, 0x42000 };
 
-            rom.BaseStream.Seek(n_start[type] + 4, SeekOrigin.Begin);
+            var (start, end, len) = type switch
+            {
+                DumpType.NoEcc => (0x1FC00000, 0x20000000, 0x40000),
+                DumpType.Ecc => (0x20BE0000, 0x21000000, 0x42000),
+                DumpType.OldBootMii => (0x20BE0000, 0x21000000, 0x42000),
+                _ => throw new NotSupportedException()
+            };
 
-            for (loc = n_start[type]; loc < n_end[type]; loc += n_len[type])
+            rom.BaseStream.Seek(start + 4, SeekOrigin.Begin);
+
+            for (loc = start; loc < end; loc += len)
             {
                 current = (int) Bswap(rom.ReadUInt32());
-                
+
                 if (current > last)
                     last = current;
                 else
-                    return loc - n_len[type];
+                    return loc - len;
 
-                rom.BaseStream.Seek(n_len[type] - 4, SeekOrigin.Current);
+                rom.BaseStream.Seek(len - 4, SeekOrigin.Current);
             }
 
-            return -1;
+            throw new InvalidOperationException("No superblock found");
         }
 
         private byte[] GetCluster(UInt16 cluster_entry, BinaryReader rom)
         {
-            Int32[] n_clusterlen = { 0x4000, 0x4200, 0x4200 };
-            Int32[] n_pagelen = { 0x800, 0x840, 0x840 };
+            var (clusterlen, pagelen) = type switch
+            {
+                DumpType.NoEcc => (0x4000, 0x800),
+                DumpType.Ecc => (0x4200, 0x840),
+                DumpType.OldBootMii => (0x4200, 0x840),
+                _ => throw new NotSupportedException()
+            };
 
             byte[] cluster = new byte[0x4000];
 
-            rom.BaseStream.Seek(cluster_entry * n_clusterlen[type], SeekOrigin.Begin);
+            rom.BaseStream.Seek(cluster_entry * clusterlen, SeekOrigin.Begin);
 
             for (int i = 0; i < 8; i++)
             {
-                byte[] page = rom.ReadBytes(n_pagelen[type]);
+                byte[] page = rom.ReadBytes(pagelen);
                 Buffer.BlockCopy(page, 0, cluster, i * 0x800, 0x800);
             }
 
@@ -285,8 +289,12 @@ namespace NAND_Extractor
             fat_entry += 6;
 
             // location in fat of cluster chain
-            Int32[] n_fat = { 0, 0x20, 0x20 };
-            int loc = loc_fat + (fat_entry / 0x400 * n_fat[type] + fat_entry) * 2;
+            var n_fat = type switch
+            {
+                DumpType.NoEcc => 0, DumpType.Ecc => 0x20, DumpType.OldBootMii =>  0x20,
+                _ => throw new NotSupportedException()
+            };
+            int loc = loc_fat + (fat_entry / 0x400 * n_fat + fat_entry) * 2;
 
             rom.BaseStream.Seek(loc, SeekOrigin.Begin);
             return Bswap(rom.ReadUInt16());
@@ -297,8 +305,14 @@ namespace NAND_Extractor
             Fst_t fst = new Fst_t();
 
             // compensate for 64 bytes of ecc data every 64 fst entries
-            Int32[] n_fst = { 0, 2, 2 };
-            int loc_entry = (entry / 0x40 * n_fst[type] + entry) * 0x20;
+            var n_fst = type switch
+            {
+                DumpType.NoEcc => 0,
+                DumpType.Ecc => 2,
+                DumpType.OldBootMii => 2,
+                _ => throw new NotSupportedException()
+            };
+            int loc_entry = (entry / 0x40 * n_fst + entry) * 0x20;
 
             rom.BaseStream.Seek(loc_fst + loc_entry, SeekOrigin.Begin);
 
@@ -328,7 +342,7 @@ namespace NAND_Extractor
                 ViewFST(fst.sib, parent, rom);
 
             AddEntry(fst, entry, parent, rom);
-            
+
             info.Items["size"].Text = (Convert.ToInt32(info.Items["size"].Text) + (int)fst.size).ToString();
             info.Items["files"].Text = (Convert.ToInt32(info.Items["files"].Text) + 1).ToString();
             Application.DoEvents();
@@ -339,16 +353,16 @@ namespace NAND_Extractor
             string details;
             string[] modes = { "d|", "f|" };
             TreeNode[] node = fileView.Nodes.Find(parent.ToString("x4"), true);
-            
+
             details = ASCIIEncoding.ASCII.GetString(fst.filename).Replace("\0", " ");
             details += TxtPadLeft(modes[fst.mode], 5);
             details += TxtPadRight( fst.attr.ToString(), 3 );
-            details += string.Format("{0}:{1}", 
+            details += string.Format("{0}:{1}",
                             fst.uid.ToString("x4").ToUpper(),
                             fst.gid.ToString("x4").ToUpper() );
             if (fst.size > 0)
                 details += TxtPadLeft(fst.size.ToString("d"), 11) + "B";
-           
+
             if (entry != 0)
             {
                 if (node.Count() > 0)
@@ -360,7 +374,7 @@ namespace NAND_Extractor
             if (fst.mode == 0 && fst.sub != 0xffff)
                 ViewFST(fst.sub, entry, rom);
         }
-        
+
 
         /*
          * Extraction functions.
@@ -422,10 +436,9 @@ namespace NAND_Extractor
                     ExtractFile(fst, parent, rom);
                     break;
                 default:
-                    Msg_Error(String.Format("Ignoring unsupported mode {0}.\n\t\t(FST entry #{1})",
-                                                fst.mode, 
+                    throw new NotSupportedException(String.Format("Unsupported mode {0}.\n\t\t(FST entry #{1})",
+                                                fst.mode,
                                                 entry.ToString("x4")));
-                    break;
             }
         }
 
@@ -446,7 +459,7 @@ namespace NAND_Extractor
                     break;
                 default:
                     Msg_Error(String.Format("Ignoring unsupported mode {0}.\n\t\t(FST entry #{1})",
-                                                fst.mode, 
+                                                fst.mode,
                                                 entry.ToString("x4")));
                     break;
             }
@@ -462,7 +475,7 @@ namespace NAND_Extractor
             {
                 if (parent != "/" && parent != "")
                     filename = Path.Combine(parent, filename);
-             
+
                 Directory.CreateDirectory(Path.Combine(Properties.Settings.Default.ExtractPath, filename));
             }
 
@@ -504,7 +517,7 @@ namespace NAND_Extractor
             }
             catch
             {
-                Msg_Error($"Can't open file for writing:\n{filePath}" );
+                throw new InvalidOperationException($"Can't open file for writing:\n{filePath}" );
             }
         }
 
@@ -546,15 +559,15 @@ namespace NAND_Extractor
          */
         public static void Msg_Error(string message)
         {
-            MessageBox.Show(Form.ActiveForm, message, "Error!", 
-                                MessageBoxButtons.OK, 
+            MessageBox.Show(Form.ActiveForm, message, "Error!",
+                                MessageBoxButtons.OK,
                                 MessageBoxIcon.Error);
         }
 
         public static void Msg_Info(string message)
         {
-            MessageBox.Show(Form.ActiveForm, message, "Information!", 
-                                MessageBoxButtons.OK, 
+            MessageBox.Show(Form.ActiveForm, message, "Information!",
+                                MessageBoxButtons.OK,
                                 MessageBoxIcon.Information);
         }
 
@@ -611,7 +624,7 @@ namespace NAND_Extractor
                 textString = string.Concat(" ", textString);
             return textString;
         }
-        
+
         private string TxtPadRight(string textString, int desiredLength)
         {
             while (textString.Length < desiredLength)
@@ -660,26 +673,38 @@ namespace NAND_Extractor
         private void ContextExtract_Click(object sender, EventArgs e)
         {
             if (fileView.SelectedNode == null)
-                Msg_Error("Try choosing a file/directory.");
-            else
             {
-                var stopwatch = Stopwatch.StartNew();
-
-                using var rom = new BinaryReader(File.Open(Properties.Settings.Default.NandPath,
-                                                    FileMode.Open,
-                                                    FileAccess.Read,
-                                                    FileShare.Read),
-                                                Encoding.ASCII);
-                if (rom.BaseStream.Length > 0)
-                    ExtractSingleFST(Convert.ToUInt16(fileView.SelectedNode.Name, 16), "", rom);
-
-                rom.Close();
-
-                stopwatch.Stop();
-
-                StatusText(string.Empty);
-                extractTime.Text = stopwatch.Elapsed.ToString();
+                Msg_Error("Try choosing a file/directory.");
+                return;
             }
+
+            var stopwatch = Stopwatch.StartNew();
+
+            using var rom = new BinaryReader(File.Open(Properties.Settings.Default.NandPath,
+                                                FileMode.Open,
+                                                FileAccess.Read,
+                                                FileShare.Read),
+                                            Encoding.ASCII);
+
+            if (rom.BaseStream.Length <= 0)
+            {
+                Msg_Error("Empty stream");
+                return;
+            }
+
+            try
+            {
+                ExtractSingleFST(Convert.ToUInt16(fileView.SelectedNode.Name, 16), "", rom);
+            }
+            catch(Exception ex)
+            {
+                Msg_Error(ex.Message);
+            }
+
+            stopwatch.Stop();
+
+            StatusText(string.Empty);
+            extractTime.Text = stopwatch.Elapsed.ToString();
         }
 
         private void FileView_MouseDown(object sender, MouseEventArgs e)
