@@ -1,0 +1,77 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:NAND_Extractor.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        Width="320"
+        Height="200"
+        MinWidth="320"
+        MinHeight="200"
+        x:Class="NAND_Extractor.Views.MainWindow"
+        Icon="/Assets/kcmmemory.ico"
+        Title="NAND Extractor"
+        >
+  <Design.DataContext>
+    <vm:MainWindowViewModel/>
+  </Design.DataContext>
+
+  <NativeMenu.Menu>
+    <NativeMenu>
+      <NativeMenuItem Header="_File" >
+        <NativeMenuItem.Menu>
+          <NativeMenu>
+            <NativeMenuItem Header="_Open" Command="{Binding OpenCommand}" Gesture="CMD+O" />
+            <NativeMenuItem Header="_Extract All" Command="{Binding ExtractAllCommand}" Gesture="CMD+E"/>
+            <NativeMenuItemSeperator/>
+            <NativeMenuItem Header="Enter NAND _Key" Command="{Binding EnterNandKeyCommand}" Gesture="CMD+K"/>
+            <NativeMenuItemSeperator/>
+            <NativeMenuItem Header="E_xit" Command="{Binding CloseCommand}"/>
+          </NativeMenu>
+        </NativeMenuItem.Menu>
+      </NativeMenuItem>
+      <NativeMenuItem Header="_Help">
+        <NativeMenuItem.Menu>
+          <NativeMenu>
+            <NativeMenuItem Header="_About" Command="{Binding AboutCommand}"/>
+          </NativeMenu>
+        </NativeMenuItem.Menu>
+      </NativeMenuItem>
+    </NativeMenu>
+  </NativeMenu.Menu>
+
+  <DockPanel>
+    <NativeMenuBar DockPanel.Dock="Top" />
+    <DockPanel DockPanel.Dock="Top" Name="Info" Margin="10">
+      <TextBlock Text="Size: " DockPanel.Dock="Left"></TextBlock>
+      <TextBlock Text="{Binding Size}" DockPanel.Dock="Left" MinWidth="30"/>
+      <TextBlock Text="Files: " DockPanel.Dock="Left" MinWidth="30" Margin="10,0,10,0"/>
+      <TextBlock Text="{Binding Files}" DockPanel.Dock="Left" MinWidth="30"/>
+      <TextBlock Text="{Binding ExtractTime}" MinWidth="50" DockPanel.Dock="Right" />
+      <TextBlock Text="Last extraction time: " HorizontalAlignment="Right"/>
+    </DockPanel>
+    <TextBlock Text="{Binding Status}" DockPanel.Dock="Bottom" Margin="10"/>
+    <TreeView Items="{Binding Nodes}" SelectedItems="{Binding SelectedItems}" SelectionMode="Single">
+      <TreeView.Styles>
+        <Style Selector="TreeViewItem">
+          <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+        </Style>
+      </TreeView.Styles>
+      <TreeView.ItemTemplate>
+        <TreeDataTemplate ItemsSource="{Binding Children}" >
+          <TextBlock Text="{Binding NandNode.Description}" FontFamily="Courier New" >
+            <TextBlock.ContextMenu>
+              <ContextMenu>
+                <MenuItem Header="Extract" Command="{Binding ContextExtractCommand}">
+                  <MenuItem.Icon>
+                    <Image Source="/Assets/decrypted.png"/>
+                  </MenuItem.Icon>
+                </MenuItem>
+              </ContextMenu>
+            </TextBlock.ContextMenu>
+          </TextBlock>
+        </TreeDataTemplate>
+      </TreeView.ItemTemplate>
+    </TreeView>
+  </DockPanel>
+</Window>

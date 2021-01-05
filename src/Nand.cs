@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using System.Windows.Forms;
 
 namespace NAND_Extractor
 {
@@ -121,7 +120,7 @@ namespace NAND_Extractor
             ExtractFST(node.Key, "", rom, extractPath, true);
         }
 
-        private DumpType GetDumpType(Int64 FileSize) => FileSize switch
+        private static DumpType GetDumpType(Int64 FileSize) => FileSize switch
         {
             536870912 => DumpType.NoEcc,
             553648128 => DumpType.Ecc,
@@ -302,7 +301,6 @@ namespace NAND_Extractor
 
             Size += fst.size;
             Files++;
-            Application.DoEvents();
         }
 
         private void AddEntry(Fst_t fst, UInt16 entry, Node parent, BinaryReader rom)
@@ -381,7 +379,7 @@ namespace NAND_Extractor
             if (parent != null)
 
                 filename = Path.Combine(parent, filename);
-            var filePath = Path.Combine(Properties.Settings.Default.ExtractPath, filename);
+            var filePath = Path.Combine(extractPath, filename);
             try
             {
                 BinaryWriter bw = new BinaryWriter(File.Open(filePath,
@@ -410,7 +408,7 @@ namespace NAND_Extractor
          * Key required length of 16 bytes.
          * IV can be from 1 to 16 byte(s) and will be padded with 0x00.
          */
-        private byte[] AesDecrypt(byte[] key, byte[] iv, byte[] enc_data)
+        private static byte[] AesDecrypt(byte[] key, byte[] iv, byte[] enc_data)
         {
             // zero out any remaining iv bytes
             byte[] iv16 = new byte[16];
@@ -434,7 +432,6 @@ namespace NAND_Extractor
             memoryStream.Close();
             cryptoStream.Close();
 
-            Application.DoEvents();
             return dec_data;
         }
 
@@ -463,14 +460,14 @@ namespace NAND_Extractor
             return b;
         }
 
-        private string TxtPadLeft(string textString, int desiredLength)
+        private static string TxtPadLeft(string textString, int desiredLength)
         {
             while (textString.Length < desiredLength)
                 textString = string.Concat(" ", textString);
             return textString;
         }
 
-        private string TxtPadRight(string textString, int desiredLength)
+        private static string TxtPadRight(string textString, int desiredLength)
         {
             while (textString.Length < desiredLength)
                 textString = string.Concat(textString, " ");

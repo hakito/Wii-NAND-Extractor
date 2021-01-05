@@ -4,6 +4,7 @@
 
 * Exception based error handling
 * Split NAND logic into separate file
+* Multi-platform Avalonia GUI
 
 ## 20210103: 1.1.1 - Export single file
 

@@ -1,16 +1,33 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net48</TargetFramework>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <Version>1.1.1</Version>
+    <TargetFramework>net5.0</TargetFramework>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <Version>1.2.0</Version>
     <LangVersion>latest</LangVersion>
+    <AssemblyName>NANDExtractor</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAPICodePack-Shell" Version="1.1.0" />
+    <Folder Include="Models\" />
+    <AvaloniaResource Include="Assets\**" />
+    <AvaloniaXaml Remove="App.axaml" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Windows.Forms" />
+    <Compile Remove="nandExtractor.cs" />
+    <Compile Remove="nandExtractor.Designer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Remove="nandExtractor.resx" />
+  </ItemGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="App.axaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="0.9.12" />
+    <PackageReference Include="Avalonia.Desktop" Version="0.9.12" />
+    <PackageReference Include="Avalonia.ReactiveUI" Version="0.9.12" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="5.0.0" />
+    <PackageReference Include="System.Resources.Extensions" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Properties\Settings.Designer.cs">
