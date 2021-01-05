@@ -34,7 +34,7 @@ namespace NAND_Extractor
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new NandExtractor());
+            Application.Run(new Extractor());
         }
     }
 }

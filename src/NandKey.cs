@@ -46,7 +46,7 @@ namespace NAND_Extractor
                 Close();
             }
             else
-                NandExtractor.Msg_Error("Your NAND Key is the wrong length.  It should be 32 characters long.  Please check your key and try again.");
+                Extractor.Msg_Error("Your NAND Key is the wrong length.  It should be 32 characters long.  Please check your key and try again.");
         }
 
         private void ButtonCancel_Click(object sender, EventArgs e)

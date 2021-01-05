@@ -26,9 +26,9 @@ using System.Windows.Forms;
 
 namespace NAND_Extractor
 {
-    public partial class NandExtractor : Form
+    public partial class Extractor : Form
     {
-        public NandExtractor()
+        public Extractor()
         {
             InitializeComponent();
             this.Load += NandExtractor_Load;
