@@ -170,7 +170,7 @@ namespace NAND_Extractor.ViewModels
             {
                 var dialog = new OpenFolderDialog();
                 var path = await dialog.ShowAsync((Window)View.GetVisualRoot());
-                if (path == null)
+                if (string.IsNullOrEmpty(path))
                     return false;
 
                 Properties.Settings.Default.ExtractPath = path;
